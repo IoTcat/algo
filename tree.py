@@ -10,6 +10,8 @@ class Node:
         self.left = None
         self.right = None
         self.parent = parent
+        self.size = 1
+        self.max = data
 
 
     def __repr__(self) -> str:
@@ -26,8 +28,37 @@ def insert_tree(root, val, parent = None):
     else:
         root.right = insert_tree(root.right, val, root)
 
+    root.size += 1
+    root.max = max(root.left and root.left.max or float('-inf'), root.right and root.right.max or float('-inf'))
+
     return root
 
+
+def delete_tree(node, root):
+    if not node or not root:
+        return root
+    
+    if node.left:
+        prev = subtree_find_prev(node)
+        node.val, prev.val = prev.val, node.val
+        return delete_tree(prev, root)
+    elif node.right:
+        next = subtree_find_next(node)
+        node.val, next.val = next.val, node.val
+        return delete_tree(next, root)
+    else:
+        if node.parent:
+            if node.parent.left == node:
+                node.parent.left = None
+            else:
+                assert node.parent.right == node
+                node.parent.right = None
+
+            while node.parent:
+                node.parent.size -= 1
+                node.max = max(node.left and node.left.max or float('-inf'), node.right and node.right.max or float('-inf'), node.val)
+                node = node.parent
+        return root
 
 def arr2tree(arr):
     root = None
@@ -116,11 +147,28 @@ def print_tree_visual_aux(node, prefix, is_left):
     if node.right:
         print_tree_visual_aux(node.right, prefix + ("│   " if is_left else "    "), False)
     
-    print(prefix + ("└── " if is_left else "┌── ") + str(node.val))
+    print(prefix + ("└── " if is_left else "┌── ") + str(node.val) + '(' + str(node.size) + 'm' + str(node.max))
 
     if node.left:
         print_tree_visual_aux(node.left, prefix + ("    " if is_left else "│   "), True)
 
+
+def get_by_index(root, i):
+    if not root:
+        return None
+
+    mid = 0
+    if root.left:
+        mid = root.left.size
+
+    if i == mid:
+        return root
+    elif i < mid:
+        return get_by_index(root.left, i)
+    else:
+        assert i > mid
+        return get_by_index(root.right, i - mid - 1)
+        
 
 
 # Test
@@ -129,6 +177,12 @@ root = arr2tree(arr)
 print(inorder(root))
 print(root)
 print_tree_visual_aux(root, "", True)
+
+delete_tree(root.left, root)
+
+print_tree_visual_aux(root, "", True)
+
+
 
 c = subtree_find_first(root)
 while c:
@@ -140,6 +194,8 @@ while c:
     print(c.val)
     c = subtree_find_prev(c)
 
+
+print([get_by_index(root, i).val for i in range(root.size)])
 
 # Execution time: 0.000997781753540039 seconds
 
